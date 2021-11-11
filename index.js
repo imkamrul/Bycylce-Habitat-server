@@ -65,6 +65,73 @@ async function run() {
             const result = await orders.insertOne(data);
             res.json(result);
         })
+        // get  only my order api 
+        app.get('/myOrders', async (req, res) => {
+            const search = req.query.search;
+            const query = { email: search };
+            const cursor = orders.find(query);
+            const events = await cursor.toArray();
+
+            res.json(events);
+        })
+        // get  all order api 
+        app.get('/allOrders', async (req, res) => {
+            const cursor = orders.find({});
+            const result = await cursor.toArray();
+            res.json(result);
+        })
+        //  delete my order api 
+        app.delete('/orderDelete/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const result = await orders.deleteOne(query);
+
+            res.json(result)
+        })
+        // order status update api 
+        app.put('/orderStatusUpdate/:id', async (req, res) => {
+            const id = req.params.id;
+            const newStatus = req.body;
+            const filter = { _id: ObjectId(id) };
+            const options = { upsert: true };
+            const updatePackage = {
+                $set: {
+                    status: newStatus.Status
+                }
+            }
+            const result = await orders.updateOne(filter, updatePackage, options)
+            res.json(result)
+        })
+        // delete orders  api 
+        app.delete('/orderDelete/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const result = await orders.deleteOne(query);
+            res.json(result)
+
+        })
+        // delete product  api 
+        app.delete('/productDelete/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const result = await products.deleteOne(query);
+            res.json(result)
+
+        })
+        // get  sub catagories order  api 
+        app.get('/catagoriesOrder', async (req, res) => {
+            const status = req.query.status;
+            const query = { status: status };
+            let cursor = {}
+            if (status) {
+                cursor = orders.find(query);
+            } else {
+                cursor = orders.find({});
+            }
+            const result = await cursor.toArray();
+            res.json(result)
+        })
+
 
     }
 
