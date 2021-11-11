@@ -13,8 +13,6 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 async function run() {
     try {
         await client.connect();
-        // console.log("database conneted")
-
         const database = client.db('ByCycleHabitat');
         const products = database.collection('Products');
         const reviews = database.collection('Reviews');
@@ -26,7 +24,6 @@ async function run() {
             const id = req.params.id;
             const query = { _id: ObjectId(id) };
             const result = await products.findOne(query);
-
             res.json(result)
         })
         // products get api 
@@ -108,7 +105,6 @@ async function run() {
             const query = { _id: ObjectId(id) };
             const result = await orders.deleteOne(query);
             res.json(result)
-
         })
         // delete product  api 
         app.delete('/productDelete/:id', async (req, res) => {
@@ -116,7 +112,6 @@ async function run() {
             const query = { _id: ObjectId(id) };
             const result = await products.deleteOne(query);
             res.json(result)
-
         })
         // get  sub catagories order  api 
         app.get('/catagoriesOrder', async (req, res) => {
@@ -131,8 +126,69 @@ async function run() {
             const result = await cursor.toArray();
             res.json(result)
         })
+        // get single product  api 
+        app.get('/singleProduct/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const result = await products.findOne(query);
+            res.json(result)
 
-
+        })
+        // update product api 
+        app.put('/products/:id', async (req, res) => {
+            const id = req.params.id;
+            const updatedProduct = req.body;
+            const filter = { _id: ObjectId(id) };
+            const options = { upsert: true }
+            const updateDoc = {
+                $set: {
+                    name: updatedProduct.name,
+                    img: updatedProduct.img,
+                    price: updatedProduct.price,
+                    description: updatedProduct.description
+                }
+            }
+            const result = await products.updateOne(filter, updateDoc, options)
+            res.json(result)
+        })
+        // user post api 
+        app.post('/users', async (req, res) => {
+            const user = req.body;
+            const result = await users.insertOne(user);
+            res.json(result);
+        });
+        app.put('/users', async (req, res) => {
+            const user = req.body;
+            const filter = { email: user.email };
+            const options = { upsert: true };
+            const updateDoc = { $set: user };
+            const result = await users.updateOne(filter, updateDoc, options);
+            res.json(result);
+        });
+        // search admin api 
+        app.get('/users/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email };
+            const user = await users.findOne(query);
+            let isAdmin = false;
+            if (user?.role === 'admin') {
+                isAdmin = true;
+            }
+            res.json({ admin: isAdmin });
+        })
+        app.put('/users/:admin', async (req, res) => {
+            const AdminEmail = req.params.admin;
+            const newAdmin = req.body.email;
+            const requesterAccount = await users.findOne({ email: AdminEmail });
+            if (requesterAccount.role === "admin") {
+                const filter = { email: newAdmin };
+                const updateDoc = { $set: { role: 'admin' } };
+                const result = await users.updateOne(filter, updateDoc);
+                res.json(result);
+            } else {
+                res.send("Permission denied")
+            }
+        })
     }
 
 
