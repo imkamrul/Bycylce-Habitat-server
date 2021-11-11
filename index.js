@@ -18,15 +18,30 @@ async function run() {
         const database = client.db('ByCycleHabitat');
         const products = database.collection('Products');
         const reviews = database.collection('Reviews');
+        const orders = database.collection('Orders');
         const users = database.collection('Users');
 
-        // reviews get api 
+        // selected api get api 
+        app.get('/selectedProduct/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const result = await products.findOne(query);
+
+            res.json(result)
+        })
+        // products get api 
         app.get('/products', async (req, res) => {
-            const cursor = products.find({});
+            const limited = parseInt(req.query.search);
+            let cursor = {}
+            if (limited) {
+                cursor = products.find({}).limit(limited);
+            } else {
+                cursor = products.find({});
+            }
             const result = await cursor.toArray();
             res.json(result)
         })
-        // products add api 
+        // products post api 
         app.post('/products', async (req, res) => {
             const data = req.body;
             const result = await products.insertOne(data);
@@ -42,6 +57,12 @@ async function run() {
         app.post('/reviews', async (req, res) => {
             const data = req.body;
             const result = await reviews.insertOne(data);
+            res.json(result);
+        })
+        // orders post api 
+        app.post('/orders', async (req, res) => {
+            const data = req.body;
+            const result = await orders.insertOne(data);
             res.json(result);
         })
 
