@@ -65,13 +65,79 @@ async function run() {
     // orders post api
     app.post("/orders", async (req, res) => {
       const data = req.body;
-      const result = await orders.insertOne(data);
-      res.json(result);
+      console.log("test",data)
+      const productInfo = {
+        total_amount: data?.price,
+        currency: "BDT",
+        tran_id: uuidv4(),
+        success_url: "http://localhost:5000/success",
+        fail_url: "http://localhost:5000/failure",
+        cancel_url: "http://localhost:5000/cancel",
+        ipn_url: "http://localhost:5000/ipn",
+        paymentStatus: "pending",
+        shipping_method: "Courier",
+        product_name: data?.productName,
+        product_category: "Electronic",
+        product_profile: "test",
+        product_image: data?.img,
+        img:data?.img,
+        name: data?.name,
+        email: data?.email,
+        mobile: data?.mobile,
+        address: data?.address,
+        productName: data?.productName,
+        price: data?.price,
+       
+        cus_name: data?.name,
+        cus_email: data?.email,
+        cus_add1: data?.address,
+        cus_add2: "Dhaka",
+        cus_city: "Dhaka",
+        cus_state: "Dhaka",
+        cus_postcode: "1000",
+        cus_country: "Bangladesh",
+        cus_phone: data?.mobile,
+        cus_fax: "01711111111",
+        ship_name: "test",
+        ship_add1: "Dhaka",
+        ship_add2: "Dhaka",
+        ship_city: "Dhaka",
+        ship_state: "Dhaka",
+        ship_postcode: 1000,
+        ship_country: "Bangladesh",
+        multi_card_name: "mastercard",
+        value_a: "ref001_A",
+        value_b: "ref002_B",
+        value_c: "ref003_C",
+        value_d: "ref004_D",
+      };
+console.log("test",productInfo)
+      // Insert order info
+      const result = await orders.insertOne(productInfo);
+console.log("test",result)
+      const sslcommer = new SslCommerzPayment(
+        process.env.STORE_ID,
+        process.env.STORE_PASSWORD,
+        false
+      ); //true for live default false for sandbox
+      sslcommer.init(productInfo).then((data) => {
+        const info = { ...productInfo, ...data };
+
+        if (info.GatewayPageURL) {
+          res.json(info.GatewayPageURL);
+        } else {
+          return res.status(400).json({
+            message: "SSL session was not successful",
+          });
+        }
+      });
+   
+    //   res.json(result);
     });
     // get  only my order api
     app.get("/myOrders", async (req, res) => {
       const search = req.query.search;
-      const query = { email: search };
+      const query = { cus_email: search };
       const cursor = orders.find(query);
       const events = await cursor.toArray();
 
@@ -255,7 +321,7 @@ async function run() {
       });
     });
     app.post("/success", async (req, res) => {
-      const result = await payment.updateOne(
+      const result = await orders.updateOne(
         { tran_id: req.body.tran_id },
         {
           $set: {
@@ -264,15 +330,15 @@ async function run() {
         }
       );
 
-      res.redirect(`http://localhost:3000/success/${req.body.tran_id}`);
+      res.redirect(`http://localhost:3000/dashboard?tran_id=${req.body.tran_id}`);
     });
     app.post("/failure", async (req, res) => {
-      const result = await payment.deleteOne({ tran_id: req.body.tran_id });
+      const result = await orders.deleteOne({ tran_id: req.body.tran_id });
 
       res.redirect(`http://localhost:3000`);
     });
     app.post("/cancel", async (req, res) => {
-      const result = await payment.deleteOne({ tran_id: req.body.tran_id });
+      const result = await orders.deleteOne({ tran_id: req.body.tran_id });
 
       res.redirect(`http://localhost:3000`);
     });
